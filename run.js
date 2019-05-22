@@ -165,7 +165,7 @@ function draw() {
     let message = `Currently: ${running ? "running" : "stopped"}
     position: [${view.x},${view.y}]
     speed: ${speed}
-    [space]: pause
+    [space]: start/pause
     [right-click]: clear particle
     [c]: clear
     [+,- || scroll]: change speed
