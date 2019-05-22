@@ -38,6 +38,7 @@ let clear = true;
 let lastDraw = new Date();
 let dt = 0;
 let running = false;
+let ignoremouse = false;
 
 /**
  * Main Function
@@ -71,10 +72,20 @@ function main() {
     });
 
     window.addEventListener('DOMMouseScroll', e => {
-        if (!holding)
+        if (ignoremouse)
             return;
         let change = e.detail >= 0 ? -1 : 1;
-        holding.charge += change;
+        if (holding) {
+            holding.charge += change;
+        } else {
+            if (change > 0) {
+                speed = speed * 2;
+            } else {
+                speed = speed / 2;
+            }
+        }
+        ignoremouse = true;
+        setTimeout(() => {ignoremouse = false}, 10);
     })
 
     canvas.addEventListener('click', e => {
@@ -88,14 +99,12 @@ function main() {
         if (e.clientX >= 5 && e.clientX <= 45 && e.clientY >= 5 && e.clientY <= 45) {
             holding = JSON.parse(JSON.stringify(particleTemplate));
             holding.charge = 1;
-            drawCharge(holding);
         }
 
         // If on top of -
         if (e.clientX >= 5 && e.clientX <= 45 && e.clientY >= 55 && e.clientY <= 95) {
             holding = JSON.parse(JSON.stringify(particleTemplate));
             holding.charge = -1;
-            drawCharge(holding);
         }
     });
 
@@ -159,7 +168,7 @@ function draw() {
     [space]: pause
     [right-click]: clear particle
     [c]: clear
-    [+,-]: change speed
+    [+,- || scroll]: change speed
     [arrows]: move view`
     messagediv.innerText = message;
 
