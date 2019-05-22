@@ -88,25 +88,32 @@ function main() {
         setTimeout(() => {ignoremouse = false}, 10);
     })
 
-    canvas.addEventListener('click', e => {
-        if (holding) {
-            particles.push(holding);
-            holding = null;
-            return;
-        }
-
+    canvas.addEventListener('mousedown', e => {
         // If on top of +
         if (e.clientX >= 5 && e.clientX <= 45 && e.clientY >= 5 && e.clientY <= 45) {
             holding = JSON.parse(JSON.stringify(particleTemplate));
             holding.charge = 1;
+            return;
         }
 
         // If on top of -
         if (e.clientX >= 5 && e.clientX <= 45 && e.clientY >= 55 && e.clientY <= 95) {
             holding = JSON.parse(JSON.stringify(particleTemplate));
             holding.charge = -1;
+            return;
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+            if (clicking(particles[i], e)) {
+                holding = particles.splice(i, 1)[0];
+                return;
+            }
         }
     });
+    canvas.addEventListener('mouseup', e => {
+        particles.push(holding);
+        holding = null;
+    })
 
     canvas.addEventListener('contextmenu', e => {
         e.preventDefault();
