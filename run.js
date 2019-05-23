@@ -111,6 +111,9 @@ function main() {
     })
 
     canvas.addEventListener('mousedown', e => {
+        if (e.button !== 0)
+            return;
+        
         // If on top of +
         if (e.clientX >= 5 && e.clientX <= 45 && e.clientY >= 5 && e.clientY <= 45) {
             holding = JSON.parse(JSON.stringify(particleTemplate));
@@ -140,6 +143,9 @@ function main() {
         };
     });
     canvas.addEventListener('mouseup', e => {
+        if (e.button !== 0)
+            return;
+
         if (dragging) {
             dragging = null;
             return;
@@ -155,9 +161,10 @@ function main() {
         for (let i = 0; i < particles.length; i++) {
             if (clicking(particles[i], e)) {
                 particles.splice(i, 1);
-                return;
+                return false;
             }
         }
+        return false;
     });
 
     lastDraw = new Date();
@@ -192,6 +199,7 @@ function drawCharge(particle, absolute, vector) {
         ctx.translate(relpos.x, relpos.y);
         ctx.rotate(vector.angle + Math.PI * 0.5);
         vector.magnitude = vector.magnitude;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)"
         ctx.beginPath();
         ctx.moveTo(5, 0);
         ctx.lineTo(5, -1 * vector.magnitude);
