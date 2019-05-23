@@ -1,3 +1,10 @@
+/**
+ * @author Gary Kim
+ * @license UNLICENSED
+ * 
+ * Copyright (c) 2019 Gary Kim <gary@garykim.dev>, All Rights Reserved
+ */
+
 window.onload = main;
 window.onresize = sizeCanvas;
 
