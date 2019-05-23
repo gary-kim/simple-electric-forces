@@ -39,6 +39,22 @@ let lastDraw = new Date();
 let dt = 0;
 let running = false;
 let ignoremouse = false;
+let dragging = {
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0
+}
+
+let vectorTemplate = {
+    angle: 0,
+    magnitude: 0
+}
+
+const DISABLE_VECTORS = 0;
+const FORCE_VECTORS = 1;
+const VELOCITY_VECTORS = 2; 
+let vectors = 0;
 
 /**
  * Main Function
@@ -48,7 +64,7 @@ function main() {
     canvas = document.getElementById("draw-in")
     ctx = canvas.getContext('2d');
 
-    holding = null;
+    holding = dragging = null;
 
     // Message div element
     messagediv = document.getElementById('message')
@@ -62,6 +78,7 @@ function main() {
     Mousetrap.bind('down', () => { clear = true; view.y -= 50 });
     Mousetrap.bind('right', () => { clear = true; view.x -= 50 });
     Mousetrap.bind('left', () => { clear = true; view.x += 50 });
+    Mousetrap.bind('v', () => { clear = true; vectors = (vectors + 1) % 3 });
 
     window.requestAnimationFrame(draw);
 
@@ -69,6 +86,11 @@ function main() {
     // Mouse events
     canvas.addEventListener('mousemove', e => {
         mousemoveevent = e;
+        if (dragging) {
+            clear = true;
+            view.x = dragging.vx - dragging.x + e.clientX;
+            view.y = dragging.vy - dragging.y + e.clientY;
+        }
     });
 
     window.addEventListener('DOMMouseScroll', e => {
@@ -109,10 +131,23 @@ function main() {
                 return;
             }
         }
+
+        dragging = {
+            x: e.clientX,
+            y: e.clientY,
+            vx: view.x,
+            vy: view.y
+        };
     });
     canvas.addEventListener('mouseup', e => {
-        particles.push(holding);
-        holding = null;
+        if (dragging) {
+            dragging = null;
+            return;
+        }
+        if (holding) {
+            particles.push(holding);
+            holding = null;
+        }
     })
 
     canvas.addEventListener('contextmenu', e => {
@@ -130,12 +165,12 @@ function main() {
 
 }
 
-function drawCharge(particle, absolute) {
+function drawCharge(particle, absolute, vector) {
     let relpos = {
         x: particle.x,
         y: particle.y
     };
-    if (!absolute) {
+    if (absolute !== true) {
         relpos.x += view.x;
         relpos.y += view.y;
     }
@@ -151,6 +186,23 @@ function drawCharge(particle, absolute) {
     text += particle.charge;
     ctx.fillText(text, relpos.x, relpos.y + 5, 2 * radius);
     ctx.restore();
+
+    if (vector !== undefined) {
+        ctx.save();
+        ctx.translate(relpos.x, relpos.y);
+        ctx.rotate(vector.angle + Math.PI * 0.5);
+        vector.magnitude = vector.magnitude;
+        ctx.beginPath();
+        ctx.moveTo(5, 0);
+        ctx.lineTo(5, -1 * vector.magnitude);
+        ctx.lineTo(10, -1 * vector.magnitude);
+        ctx.lineTo(0, -1 * vector.magnitude - 10);
+        ctx.lineTo(-10, -1 * vector.magnitude);
+        ctx.lineTo(-5, -1 * vector.magnitude);
+        ctx.lineTo(-5, 0);
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 function draw() {
@@ -160,7 +212,7 @@ function draw() {
     lastDraw = now;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     if (clear) {
         clear = false;
         ctx.fillStyle = 'rgba(255, 255, 255, 1)';
@@ -172,11 +224,13 @@ function draw() {
     let message = `Currently: ${running ? "running" : "stopped"}
     position: [${view.x},${view.y}]
     speed: ${speed}
+    vectors: ${(vectors === DISABLE_VECTORS)? "disabled": (vectors === VELOCITY_VECTORS)? "velocity": "forces"}
     [space]: start/pause
     [right-click]: clear particle
     [c]: clear
     [+,- || scroll]: change speed
-    [arrows]: move view`
+    [arrows || click & drag]: move view
+    [v]: toggle vectors`
     messagediv.innerText = message;
 
     if (holding) {
@@ -203,8 +257,23 @@ function draw() {
             particle.vx += forces.x * dt;
             particle.vy += forces.y * dt;
 
-            drawCharge(particle);
+            let vector = undefined;
+            if(vectors === VELOCITY_VECTORS) {
+                vector = {
+                    angle: Math.atan2(particle.vy, particle.vx),
+                    magnitude: Math.sqrt(Math.pow(particle.vx, 2) + Math.pow(particle.vy, 2)) * 1000
+                }
+            } else if (vectors === FORCE_VECTORS) {
+                vector = {
+                    angle: Math.atan2(forces.y, forces.x),
+                    magnitude: Math.sqrt(Math.pow(forces.x, 2) + Math.pow(forces.y, 2)) * 1000000
+                }
+            }
+            
+            drawCharge(particle, false, vector);
         })
+    } else {
+        particles.forEach(drawCharge);
     }
 
     window.requestAnimationFrame(draw);
@@ -236,8 +305,10 @@ function calcForces(particle) {
             return;
         }
 
-        x += 1 / Math.pow((info.displacement), 2) * curr.charge * -1 * particle.charge * Math.cos(info.angle);
-        y += 1 / Math.pow((info.displacement), 2) * curr.charge * -1 * particle.charge * Math.sin(info.angle);
+        let totalForce = 1 / Math.pow((info.displacement), 2) * curr.charge * -1 * particle.charge;
+
+        x += totalForce * Math.cos(info.angle);
+        y += totalForce * Math.sin(info.angle);
 
     })
 
