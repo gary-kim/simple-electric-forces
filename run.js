@@ -85,7 +85,7 @@ function main() {
             }
         }
         ignoremouse = true;
-        setTimeout(() => {ignoremouse = false}, 10);
+        setTimeout(() => { ignoremouse = false }, 10);
     })
 
     canvas.addEventListener('mousedown', e => {
@@ -192,9 +192,8 @@ function draw() {
     drawCharge({ x: 25, y: 75, charge: -1 }, true);
 
     previous = JSON.parse(JSON.stringify(particles))
-
-    particles.forEach(particle => {
-        if (running) {
+    if (running) {
+        particles.forEach(particle => {
             let forces = calcForces(particle);
 
             // Euler's Therom
@@ -204,12 +203,9 @@ function draw() {
             particle.vx += forces.x * dt;
             particle.vy += forces.y * dt;
 
-        }
-
-        drawCharge(particle);
-    })
-
-
+            drawCharge(particle);
+        })
+    }
 
     window.requestAnimationFrame(draw);
 }
